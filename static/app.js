@@ -62,7 +62,7 @@ async function ejecutarForecast() {
       const c    = colores[metrica];
 
       // Separar datos históricos de los pronosticados
-      const fechaCorte = hist[hist.length - 1].ds;
+      const fechaCorte = data.historico[data.historico.length - 1].ds;
       const predFuturo = pred.filter(r => r.ds > fechaCorte);
 
       const trazas = [
