@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AINetOps – Capacity Planning Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>🔴 AINetOps – Capacity Planning</h1>
+    <p>Forecasting (Pronóstico) de Colapso del Router Principal con IA</p>
+  </header>
+
+  <main>
+
+    <!-- Panel de control -->
+    <section class="panel-control card">
+      <h2>⚙️ Configuración</h2>
+
+      <div class="opciones">
+        <label>
+          <input type="radio" name="modo" value="sintetico" checked />
+          Usar datos sintéticos (demo automático)
+        </label>
+        <label>
+          <input type="radio" name="modo" value="csv" />
+          Subir mi propio CSV (Archivo de Valores Separados por Comas)
+        </label>
+      </div>
+
+      <div id="csv-upload" class="oculto">
+        <p class="hint">
+          El CSV debe tener estas columnas exactas:<br/>
+          <code>ds</code> (fecha, formato YYYY-MM-DD), <code>cpu</code>, <code>ram</code>, <code>trafico</code>
+          (valores en porcentaje 0–100)
+        </p>
+        <input type="file" id="archivo-csv" accept=".csv" />
+      </div>
+
+      <button id="btn-forecast" onclick="ejecutarForecast()">
+        ▶ Generar Forecast
+      </button>
+    </section>
+
+    <!-- Indicador de carga -->
+    <div id="loading" class="oculto">
+      <div class="spinner"></div>
+      <p>Ejecutando modelo Prophet y consultando GPT (Generative Pre-trained Transformer)-4o-mini…</p>
+    </div>
+
+    <!-- Tarjetas de fechas de colapso -->
+    <section id="colapso-cards" class="oculto">
+      <h2>⚠️ Fechas Proyectadas de Saturación (umbral 90%)</h2>
+      <div class="cards-row">
+        <div class="card rojo">
+          <h3>🖥️ CPU</h3>
+          <p id="fecha-cpu">—</p>
+          <small>Unidad Central de Procesamiento</small>
+        </div>
+        <div class="card naranja">
+          <h3>💾 RAM</h3>
+          <p id="fecha-ram">—</p>
+          <small>Memoria de Acceso Aleatorio</small>
+        </div>
+        <div class="card azul">
+          <h3>📡 Tráfico</h3>
+          <p id="fecha-trafico">—</p>
+          <small>Utilización del enlace de red</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gráficas -->
+    <section id="graficas" class="oculto">
+      <h2>📈 Proyecciones a 12 meses</h2>
+      <div id="grafica-cpu"     class="chart-box"></div>
+      <div id="grafica-ram"     class="chart-box"></div>
+      <div id="grafica-trafico" class="chart-box"></div>
+    </section>
+
+    <!-- Resumen ejecutivo IA -->
+    <section id="seccion-ia" class="oculto card">
+      <h2>🤖 Resumen Ejecutivo generado por IA (Inteligencia Artificial)</h2>
+      <div id="resumen-ia" class="resumen-box"></div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>AINetOps Capacity Planning Demo · Powered by Prophet + GPT-4o-mini · Deployed on Vercel</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
