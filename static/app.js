@@ -15,6 +15,7 @@ async function ejecutarForecast() {
   // Mostrar spinner, ocultar secciones previas
   btnForecast.disabled = true;
   loading.classList.remove("oculto");
+  loading.style.display = "flex";
   ["colapso-cards","graficas","seccion-ia"].forEach(id =>
     document.getElementById(id).classList.add("oculto")
   );
@@ -51,8 +52,8 @@ async function ejecutarForecast() {
       trafico: { hist: "#38bdf8", pred: "#93d9f7", banda: "rgba(56,189,248,0.15)" }
     };
     const titulos = {
-      cpu: "CPU (Unidad Central de Procesamiento) – Utilización %",
-      ram: "RAM (Memoria de Acceso Aleatorio) – Utilización %",
+      cpu:     "CPU (Unidad Central de Procesamiento) – Utilización %",
+      ram:     "RAM (Memoria de Acceso Aleatorio) – Utilización %",
       trafico: "Tráfico de Red – Utilización del enlace %"
     };
 
@@ -94,7 +95,7 @@ async function ejecutarForecast() {
         },
         // Línea de umbral crítico 90%
         {
-          x: [hist[0].ds, predFuturo.at(-1)?.ds ?? hist.at(-1).ds],
+          x: [hist[0].ds, predFuturo.length > 0 ? predFuturo.at(-1).ds : hist.at(-1).ds],
           y: [90, 90],
           name: "Umbral crítico 90%",
           type: "scatter", mode: "lines",
@@ -124,8 +125,10 @@ async function ejecutarForecast() {
   } catch (err) {
     alert("Error al generar el forecast: " + err.message);
     console.error(err);
-  } finally {
-    loading.classList.add("oculto");
-    btnForecast.disabled = false;
   }
+
+  // Siempre ocultar spinner y rehabilitar botón
+  loading.classList.add("oculto");
+  loading.style.display = "none";
+  btnForecast.disabled = false;
 }

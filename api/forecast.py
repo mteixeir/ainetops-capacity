@@ -5,7 +5,7 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 import pandas as pd
 import numpy as np
 import os
-from openai import OpenAI
+import httpx
 from datetime import datetime
 from io import StringIO
 
@@ -38,12 +38,10 @@ def generar_datos_sinteticos():
 def forecast_metrica(df: pd.DataFrame, col: str, periodos: int = 12):
     serie = df[col].values.astype(float)
 
-    # Holt-Winters con tendencia aditiva (sin estacionalidad por serie corta)
     modelo = ExponentialSmoothing(serie, trend="add", seasonal=None)
     ajuste = modelo.fit(optimized=True)
     pred   = ajuste.forecast(periodos)
 
-    # Intervalo de confianza simple: ±1.96 * desviación estándar de residuos
     residuos = ajuste.resid
     std      = float(np.std(residuos))
 
@@ -53,7 +51,8 @@ def forecast_metrica(df: pd.DataFrame, col: str, periodos: int = 12):
 
     hist_rows = [{"ds": str(d.date()), "yhat": round(float(v), 2),
                   "yhat_lower": round(float(v), 2),
-                  "yhat_upper": round(float(v), 2)} for d, v in zip(fechas_hist, serie)]
+                  "yhat_upper": round(float(v), 2)}
+                 for d, v in zip(fechas_hist, serie)]
 
     pred_rows = [{"ds": str(d.date()),
                   "yhat":       round(np.clip(float(v), 0, 100), 2),
@@ -81,7 +80,7 @@ async def run_forecast(
                 return {"error": "El CSV debe tener columnas: ds, cpu, ram, trafico"}
 
     # 2. Forecast por métrica
-    resultados    = {}
+    resultados     = {}
     fechas_colapso = {}
     meses_es = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                 "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
@@ -97,33 +96,28 @@ async def run_forecast(
         else:
             fechas_colapso[metrica] = "No proyectado en 12 meses"
 
-    # 3. Resumen ejecutivo con GPT-4o-mini
+    # 3. Resumen ejecutivo via OpenAI REST API directa con httpx
     api_key    = os.environ.get("OPENAI_API_KEY")
     resumen_ia = ""
     if api_key:
         try:
-            client = OpenAI(api_key=api_key)
-            prompt = f"""
-Eres un arquitecto de redes senior presentando a la gerencia de una empresa de telecomunicaciones.
+            prompt = f"""Eres un arquitecto de redes senior presentando a la gerencia de una empresa de telecomunicaciones.
 Basado en el análisis de forecasting (pronóstico) del router principal con proyección a 12 meses:
-
 - CPU (Unidad Central de Procesamiento): saturación proyectada en {fechas_colapso.get('cpu')}
 - RAM (Memoria de Acceso Aleatorio): saturación proyectada en {fechas_colapso.get('ram')}
 - Tráfico de red: saturación proyectada en {fechas_colapso.get('trafico')}
+Redacta un párrafo ejecutivo conciso (máximo 120 palabras) que describa el riesgo, mencione las fechas críticas, recomiende el reemplazo del equipo y use lenguaje comprensible para gerencia no técnica. Responde solo en español."""
 
-Redacta un párrafo ejecutivo conciso (máximo 120 palabras) que:
-1. Describa la situación de riesgo claramente
-2. Mencione las fechas críticas
-3. Recomiende la acción (reemplazo del equipo)
-4. Use lenguaje profesional pero comprensible para gerencia no técnica
-Responde solo en español.
-"""
-            respuesta = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=200
+            r = httpx.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}",
+                         "Content-Type": "application/json"},
+                json={"model": "gpt-4o-mini",
+                      "messages": [{"role": "user", "content": prompt}],
+                      "max_tokens": 200},
+                timeout=20.0
             )
-            resumen_ia = respuesta.choices[0].message.content
+            resumen_ia = r.json()["choices"][0]["message"]["content"]
         except Exception as e:
             resumen_ia = f"Error al conectar con OpenAI: {str(e)}"
     else:
@@ -134,8 +128,8 @@ Responde solo en español.
     historico["ds"] = historico["ds"].astype(str)
 
     return {
-        "historico":       historico.to_dict(orient="records"),
-        "forecast":        resultados,
-        "fechas_colapso":  fechas_colapso,
-        "resumen_ia":      resumen_ia
+        "historico":      historico.to_dict(orient="records"),
+        "forecast":       resultados,
+        "fechas_colapso": fechas_colapso,
+        "resumen_ia":     resumen_ia
     }
