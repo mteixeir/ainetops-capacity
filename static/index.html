@@ -33,9 +33,13 @@
 
       <div id="csv-upload" class="oculto">
         <p class="hint">
-          El CSV debe tener estas columnas exactas:<br/>
+          El CSV (Archivo de Valores Separados por Comas) debe tener estas columnas exactas:<br/>
           <code>ds</code> (fecha, formato YYYY-MM-DD), <code>cpu</code>, <code>ram</code>, <code>trafico</code>
-          (valores en porcentaje 0–100)
+          (valores en porcentaje 0–100).<br/><br/>
+          Ejemplo de las primeras dos líneas del archivo:<br/>
+          <code>ds,cpu,ram,trafico</code><br/>
+          <code>2024-06-01,41.2,52.1,31.5</code><br/>
+          <code>2024-07-01,43.5,54.3,33.8</code>
         </p>
         <input type="file" id="archivo-csv" accept=".csv" />
       </div>
@@ -90,7 +94,7 @@
   </main>
 
   <footer>
-    <p>AINetOps Capacity Planning Demo · Powered by Prophet + GPT-4o-mini · Deployed on Vercel</p>
+    <p>AINetOps Capacity Planning Demo · Powered by Holt-Winters + GPT-4o-mini · Deployed on Vercel</p>
   </footer>
 
   <script src="/static/app.js"></script>
